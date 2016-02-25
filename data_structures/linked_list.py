@@ -85,8 +85,23 @@ class LinkedList(object):
 			self.head = curr_node
 		else:
 			prev.set_next(curr_node.get_next()) 
-			
+	
+	# Custom string method to print out data in list
+	def __str__(self):
+		l = []
+		curr_node = self.head
+		while curr_node:
+			l.append(str(curr_node.get_data()))
+			curr_node = curr_node.get_next()
+		return "(" + ",".join(l) + ")"
 
 
 
+ll = LinkedList()
+ll.insert(0,0)
+ll.insert(1,1)
+ll.insert(2,2)
+print ll
+ll.insert(1,0.5)
+print ll.search(1)
 
