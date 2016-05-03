@@ -1,130 +1,66 @@
-import asyncore
-import string, socket
-import StringIO
-import urlparse, mimetools
+import asyncio
+import aiohttp
 import re
-
-class AsyncHTTP(asyncore.dispatcher_with_send):
-    # HTTP requestor
-
-    def __init__(self, uri, consumer):
-        asyncore.dispatcher_with_send.__init__(self)
-
-        self.uri = uri
-        self.consumer = consumer
-
-        # turn the uri into a valid request
-        scheme, host, path, params, query, fragment = urlparse.urlparse(uri)
-        assert scheme == "http", "only supports HTTP requests"
-        try:
-            host, port = string.split(host, ":", 1)
-            port = int(port)
-        except (TypeError, ValueError):
-            port = 80 # default port
-        if not path:
-            path = "/"
-        if params:
-            path = path + ";" + params
-        if query:
-            path = path + "?" + query
-
-        self.request = "GET %s HTTP/1.0\r\nHost: %s\r\n\r\n" % (path, host)
-
-        self.host = host
-        self.port = port
-
-        self.status = None
-        self.header = None
-
-        self.data = ""
-
-        # get things going!
-        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.connect((host, port))
-
-    def handle_connect(self):
-        # connection succeeded
-        self.send(self.request)
-
-    def handle_expt(self):
-        # connection failed; notify consumer (status is None)
-        self.close()
-        try:
-            http_header = self.consumer.http_header
-        except AttributeError:
-            pass
-        else:
-            http_header(self)
-
-    def handle_read(self):
-        data = self.recv(2048)
-        if not self.header:
-            self.data = self.data + data
-            try:
-                i = string.index(self.data, "\r\n\r\n")
-            except ValueError:
-                return # continue
-            else:
-                # parse header
-                fp = StringIO.StringIO(self.data[:i+4])
-                # status line is "HTTP/version status message"
-                status = fp.readline()
-                self.status = string.split(status, " ", 2)
-                # followed by a rfc822-style message header
-                self.header = mimetools.Message(fp)
-                # followed by a newline, and the payload (if any)
-                data = self.data[i+4:]
-                self.data = ""
-                # notify consumer (status is non-zero)
-                try:
-                    http_header = self.consumer.http_header
-                except AttributeError:
-                    pass
-                else:
-                    http_header(self)
-                if not self.connected:
-                    return # channel was closed by consumer
-
-        self.consumer.feed(data)
-
-    def handle_close(self):
-        self.consumer.close()
-        self.close()
+from datetime import datetime
+import requests
 
 
-class DummyConsumer:
-    size = 0
+'''
+Synchronous requests
 
-    def http_header(self, request):
-        # handle header
-        if request.status is None:
-            print "connection failed"
-        else:
-            print "status", "=>", request.status
+'''
+def fetch_sync(count):
+    responses = []
+    start_time = datetime.now()
+    for i in range(count):
+        responses.append(requests.get('https://en.wikipedia.org/wiki/Special:Random').text)
+    end_time = datetime.now()
+    total_time = end_time - start_time
 
-    def feed(self, data):
-        # handle incoming data
-        self.size = self.size + len(data)
-        title = re.search('<title>(.+?)</title>', data)
-        if title:
-            m = title.group(1)
-            print m
+    print('Sync time taken in (s): ', total_time.total_seconds())
 
-    def close(self):
-        # end of data
-        print self.size, "bytes in body"
+    print_responses(responses)
 
 
 
-if __name__ == '__main__':
+'''
+Asynchronous requests
 
-    for i in range(5):
-        consumer = DummyConsumer()
+'''
+async def fetch(url):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            return await response.text()
 
-        request = AsyncHTTP(
-            "http://www.justinyan.com",
-            consumer
-        )
+async def run(loop,  r):
+    url = "https://en.wikipedia.org/wiki/Special:Random"
+    tasks = []
+    start_time = datetime.now()
+    for i in range(r):
+        task = asyncio.ensure_future(fetch(url))
+        tasks.append(task)
 
-    asyncore.loop()
+    responses = await asyncio.gather(*tasks)
+    end_time = datetime.now()
+    total_time = end_time - start_time
+
+    print('Async time taken in (s): ', total_time.total_seconds())
+    print_responses(responses)
+
+def print_responses(responses):
+    for r in responses:
+        title = re.search('<title>(.*)</title>', r).group(1)
+
+        print(title)
+
+
+'''
+Run time comparison 
+'''
+fetch_sync(5)
+print('\n')
+
+loop = asyncio.get_event_loop()
+future = asyncio.ensure_future(run(loop, 5))
+loop.run_until_complete(future)
 
