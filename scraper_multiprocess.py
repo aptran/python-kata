@@ -5,30 +5,29 @@ import re
 from datetime import datetime
 
 def make_request():
-	#response = requests.get('http://en.wikipedia.org/wiki/Special:Random')
-	response = requests.get('http://justinyan.com')
+	response = requests.get('http://en.wikipedia.org/wiki/Special:Random')
 	html = response.text
 
 	title = re.search('<title>(.+?)</title>', html)
 	if title:
 		m = title.group(1)
-		print m
+		print(m)
 	else:
-		print 'No title.'
+		print('No title.')
 	return
 
 
 def without_processes():
-	print 'Beginning requests without processes...'
+	print('Beginning requests without processes...')
 	start_time = datetime.now()
 	for i in range(5):
 		make_request()
 	end_time = datetime.now()
-	print 'Without processes:', end_time - start_time
+	print('Without processes:', (end_time - start_time).total_seconds())
 
 
 def with_processes():
-	print 'Beginning requests with processes...'
+	print('Beginning requests with processes...')
 	start_time = datetime.now()
 	jobs = []
 	for i in range(5):
@@ -40,11 +39,11 @@ def with_processes():
 		j.join()
 
 	end_time = datetime.now()
-	print 'With processes:', end_time - start_time
+	print('With processes:', (end_time - start_time).total_seconds())
 
 
 if __name__ == '__main__':
 	with_processes()
-	print '\n'
+	print('\n')
 	without_processes()
 
