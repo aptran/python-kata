@@ -1,3 +1,3 @@
 # Python Kata
 
-A collection of Python coding problems I've done from Codewars.
+A collection of my experience with coding in Python, ranging from CodeWars problems, to a simple web scraper comparing sychronous and asynchronous request times. 
