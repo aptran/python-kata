@@ -9,7 +9,7 @@ import sys
 Synchronous requests
 
 '''
-def fetch_sync(count, url):
+def fetch_sync(count, url, print_titles):
     responses = []
     start_time = datetime.now()
     for i in range(count):
@@ -18,8 +18,8 @@ def fetch_sync(count, url):
     total_time = end_time - start_time
 
     print('Sync time taken in (s): ', total_time.total_seconds())
-
-    print_responses(responses)
+    if print_titles:
+        print_responses(responses)
 
 
 
@@ -32,7 +32,7 @@ async def fetch(url):
         async with session.get(url) as response:
             return await response.text()
 
-async def run(loop, r, url):
+async def run(loop, r, url, print_titles):
     tasks = []
     start_time = datetime.now()
     for i in range(r):
@@ -44,7 +44,8 @@ async def run(loop, r, url):
     total_time = end_time - start_time
 
     print('Async time taken in (s): ', total_time.total_seconds())
-    print_responses(responses)
+    if print_titles:
+        print_responses(responses)
 
 
 
@@ -66,6 +67,7 @@ Run time comparison
 '''
 url = "https://en.wikipedia.org/wiki/Special:Random"
 num_loops = 5
+_print_titles = False
 
 if len(sys.argv) > 1:
     url = sys.argv[1]
@@ -73,10 +75,12 @@ if len(sys.argv) > 1:
 if len(sys.argv) > 2:
     num_loops = int(sys.argv[2])
 
-fetch_sync(num_loops, url)
-print('\n')
+fetch_sync(num_loops, url, _print_titles)
+print('')
 
 loop = asyncio.get_event_loop()
-future = asyncio.ensure_future(run(loop, num_loops, url))
+future = asyncio.ensure_future(run(loop, num_loops, url, _print_titles))
 loop.run_until_complete(future)
+
+
 

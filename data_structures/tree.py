@@ -118,19 +118,19 @@ class Tree(object):
 
 	def dfs_inorder_iterative(self):
 		order = []
-		visited = []
-		node_stack = [self.root]
-		while node_stack:
-			curr_node = node_stack.pop()
-			if curr_node.right:
-				node_stack.append(curr_node.right)
-			if curr_node.left:
-				visited.append(curr_node.val)
-				node_stack.append(curr_node.left)
+		node_stack = []
+
+		curr_node = self.root
+
+		while node_stack or curr_node:
+			if curr_node:
+				node_stack.append(curr_node)
+				curr_node = curr_node.left
 			else:
+				curr_node = node_stack.pop()
 				order.append(curr_node.val)
-				if visited:
-					order.append(visited.pop())
+				curr_node = curr_node.right
+
 		return order
 
 	'''
